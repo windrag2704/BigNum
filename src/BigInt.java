@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.util.ArrayList;
 
 public class BigInt {
@@ -151,7 +153,7 @@ public class BigInt {
         return new BigInt(result);
     }
 
-    private void mulOnDivisor(int count) {
+    private void mulOnBase(int count) {
         for (int i = 0; i < count; i++) {
             buff.add(0, (long) 0);
         }
@@ -161,7 +163,7 @@ public class BigInt {
         BigInt result = new BigInt(0);
         for (int i = 0; i < other.buff.size(); i++) {
             BigInt temp = this.mulOnElement(other.buff.get(i));
-            temp.mulOnDivisor(i);
+            temp.mulOnBase(i);
             result = result.add(temp);
         }
         return result;
@@ -169,11 +171,38 @@ public class BigInt {
 
     private BigInt mul10(int count) {
         BigInt result = new BigInt(this);
-        result.mulOnDivisor(count / elementSize);
+        result.mulOnBase(count / elementSize);
         for (int i = 0; i < count % elementSize; i++ ) {
             result = result.mul(new BigInt(10));
         }
         return result;
+    }
+
+    private Pair<BigInt, BigInt> divide(BigInt other) {
+        BigInt dividend = new BigInt(this);
+        StringBuilder quotient = new StringBuilder();
+        int multiplier = dividend.toString().length() - other.toString().length();
+        while (multiplier >= 0) {
+            BigInt temp = new BigInt(other);
+            temp = temp.mul10(multiplier);
+            int quotientDig = 0;
+            while(dividend.moreThan(temp) || dividend.equals(temp)) {
+                quotientDig++;
+                dividend = dividend.sub(temp);
+            }
+            quotient.append(quotientDig);
+            multiplier--;
+        }
+        if (quotient.charAt(0) == '0') quotient.deleteCharAt(0);
+        return new Pair<>(dividend, new BigInt(quotient.toString()));
+    }
+
+    public BigInt div(BigInt other) {
+        return this.divide(other).getValue();
+    }
+
+    public BigInt mod(BigInt other) {
+        return this.divide(other).getKey();
     }
 
 }
