@@ -26,6 +26,10 @@ public class BigInt {
         init(num.toString());
     }
 
+    public BigInt(Long num) {
+        init(num.toString());
+    }
+
     public BigInt(BigInt num) {
         buff.addAll(num.buff);
     }
@@ -55,6 +59,7 @@ public class BigInt {
     }
 
     public BigInt sub(BigInt other) {
+        if (this.compareTo(other) == -1) throw new IllegalArgumentException();
         int remember = 0;
         ArrayList<Long> result = new ArrayList<>(other.buff);
         while (result.size() < buff.size()) {
@@ -78,60 +83,29 @@ public class BigInt {
     }
 
     public String toString() {
-        StringBuilder baseStr = new StringBuilder();
-        for (int i = 0; i < elementSize; i++) {
-            baseStr.append("0");
-        }
-        ArrayList<String> num = new ArrayList<>();
-        for (int i = 0; i < buff.size(); i++) {
-            num.add(buff.get(i).toString());
-            int length = num.get(i).length();
-            if (length < elementSize && i != buff.size() - 1) {
-                StringBuilder temp = new StringBuilder(baseStr);
-                num.set(i, temp.replace(elementSize - length, elementSize, num.get(i)).toString());
-            }
-        }
         StringBuilder result = new StringBuilder();
-        for (int i = num.size() - 1; i >= 0; i--) {
-            result.append(num.get(i));
+        String format = "%0" + elementSize + "d";
+        result.append(buff.get(buff.size() - 1));
+        for (int i = buff.size() - 2; i >= 0; i--) {
+            result.append(String.format(format, buff.get(i)));
         }
         return result.toString();
     }
 
-    public boolean moreThan(BigInt other) {
-        if (other.buff.size() > buff.size()) {
-            return false;
-        } else if (other.buff.size() < buff.size()) {
-            return true;
-        } else {
-            for (int i = buff.size() - 1; i >= 0; i--) {
-                if (buff.get(i) > other.buff.get(i)) {
-                    return true;
-                }
-                if (buff.get(i) < other.buff.get(i)) {
-                    return false;
-                }
-            }
-            return false;
+    public int compareTo(BigInt other) {
+        if (this.buff.size() > other.buff.size()) {
+            return 1;
+        } else if (this.buff.size() < other.buff.size()) {
+            return -1;
         }
-    }
-
-    public boolean lessThan(BigInt other) {
-        if (other.buff.size() > buff.size()) {
-            return true;
-        } else if (other.buff.size() < buff.size()) {
-            return false;
-        } else {
-            for (int i = buff.size() - 1; i >= 0; i--) {
-                if (buff.get(i) < other.buff.get(i)) {
-                    return true;
-                }
-                if (buff.get(i) > other.buff.get(i)) {
-                    return false;
-                }
+        for (int i = buff.size() - 1; i >= 0; i--) {
+            if (buff.get(i) > other.buff.get(i)) {
+                return 1;
+            } else if (buff.get(i) < other.buff.get(i)) {
+                return -1;
             }
-            return false;
         }
+        return 0;
     }
 
     public boolean equals(BigInt other) {
@@ -166,19 +140,27 @@ public class BigInt {
             temp.mulOnBase(i);
             result = result.add(temp);
         }
+        while (result.buff.size() > 1) {
+            if (result.buff.get(result.buff.size() - 1) == 0) {
+                result.buff.remove(result.buff.size() - 1);
+            } else {
+                break;
+            }
+        }
         return result;
     }
 
     private BigInt mul10(int count) {
         BigInt result = new BigInt(this);
         result.mulOnBase(count / elementSize);
-        for (int i = 0; i < count % elementSize; i++ ) {
+        for (int i = 0; i < count % elementSize; i++) {
             result = result.mul(new BigInt(10));
         }
         return result;
     }
 
     private Pair<BigInt, BigInt> divide(BigInt other) {
+        if (other.toString().equals("0")) throw new ArithmeticException();
         BigInt dividend = new BigInt(this);
         StringBuilder quotient = new StringBuilder();
         int multiplier = dividend.toString().length() - other.toString().length();
@@ -186,14 +168,18 @@ public class BigInt {
             BigInt temp = new BigInt(other);
             temp = temp.mul10(multiplier);
             int quotientDig = 0;
-            while(dividend.moreThan(temp) || dividend.equals(temp)) {
+            while (dividend.compareTo(temp) != -1) {
                 quotientDig++;
                 dividend = dividend.sub(temp);
             }
             quotient.append(quotientDig);
             multiplier--;
         }
-        if (quotient.charAt(0) == '0') quotient.deleteCharAt(0);
+        if (quotient.length() == 0) {
+            quotient.append(0);
+        } else if (quotient.charAt(0) == '0') {
+            quotient.deleteCharAt(0);
+        }
         return new Pair<>(dividend, new BigInt(quotient.toString()));
     }
 
